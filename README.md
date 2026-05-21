@@ -1,13 +1,6 @@
-# vmware-cyber-range_homelab
-Enterprise VMware Workstation Pro homelab for cybersecurity training, Active Directory attack simulation, malware analysis, SIEM monitoring, and NIDS testing. Features pfSense segmentation, vulnerable targets, pivoting labs, Wazuh, Suricata, Sysmon, Kerberoasting, AS-REP roasting, Kali Linux, Windows Server, MITRE ATT&amp;CK-based detection workflows.
-
-Here’s a clean, structured, and GitHub-friendly `README.md` format for your project. It keeps the guide professional, readable, and easy to navigate without overwhelming the reader.
-
----
-
 # Enterprise VMware Cyber Range Lab
 
-Enterprise VMware Workstation Pro homelab for cybersecurity training, Active Directory attack simulation, malware analysis, SIEM monitoring, and NIDS testing. Features pfSense segmentation, vulnerable targets, pivoting labs, Wazuh, Suricata, Sysmon, Kerberoasting, AS-REP roasting, Kali Linux, Windows Server, MITRE ATT&CK-based detection workflows.
+This project is divided into multiple modules that guide you through building a complete cybersecurity homelab with VMware Workstation Pro. By the end, you will have a secure environment for practicing penetration testing, attack simulation, threat detection, and SIEM-based security monitoring across multiple targets. 
 
 ---
 
@@ -82,7 +75,7 @@ Enterprise VMware Workstation Pro homelab for cybersecurity training, Active Dir
 | ---------- | ---------------------- | -------------- |
 | CPU        | x86-64 Multi-Core      | 8+ Threads     |
 | RAM        | 16 GB                  | 32 GB          |
-| Storage    | SSD                    | NVMe SSD       |
+| Storage    | 512 SSD                | 1TB NVMe SSD   |
 | Hypervisor | VMware Workstation Pro | Latest Version |
 
 ---
@@ -120,7 +113,7 @@ Enterprise VMware Workstation Pro homelab for cybersecurity training, Active Dir
 | VM                 | Role                               |
 | ------------------ | ---------------------------------- |
 | pfSense            | Firewall & Routing                 |
-| Kali Linux         | Attack Platform                    |
+| Kali Linux         | Attacking Machine                  |
 | DC01               | Active Directory Domain Controller |
 | WKSTN01            | Domain Workstation                 |
 | WKSTN02            | Domain Workstation                 |
@@ -252,3 +245,5 @@ This lab is intended strictly for:
 * Malware analysis research
 
 Do not expose these systems directly to the public internet.
+
+Special Credits: The inspiration for this project comes from cybersecurity professional and ethical hacker [Ben Heater](https://benheater.com/). You can check out his blog here.
