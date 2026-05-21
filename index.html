@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VMware Cyber Range Lab Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Chosen Palette: Warm Neutrals & Muted Tech Accents (Sand #F4F1ED, Surface #FFFFFF, Text #2D3748, Accent-Active #D97757, Accent-Done #648268, Accent-Info #4A6C8C) -->
+    <!-- Application Structure Plan: The SPA uses a tabbed dashboard structure: 1. "Overview & Specs" to set expectations and hardware budgets. 2. "Network Architecture" featuring an interactive HTML/CSS map to understand the topology before building. 3. "Implementation Roadmap" providing a step-by-step interactive checklist of the provided links, with VMware and Kali marked as pre-completed based on user input. This structure was chosen to separate theoretical understanding (Architecture) from practical execution (Roadmap), preventing cognitive overload. -->
+    <!-- Visualization & Content Choices: 1. Hardware Specs -> Resource Planner -> Chart.js Doughnut -> Interactive hover -> Justification: Helps users visualize resource budgeting (RAM/Disk). 2. Lab Topology -> Interactive HTML Grid Diagram -> Clickable nodes -> Justification: Replaces static images with an interactive map to explain what each network segment does. 3. Build Process -> Interactive Checklist -> JS toggle state -> Justification: Guides the user step-by-step as requested. -> NO SVG/Mermaid used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            background-color: #F4F1ED;
+            color: #2D3748;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+
+        .tab-btn.active {
+            border-bottom: 4px solid #D97757;
+            color: #D97757;
+            font-weight: bold;
+        }
+
+        .node-card {
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .node-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-color: #4A6C8C;
+        }
+        .node-card.active-node {
+            background-color: #4A6C8C;
+            color: #ffffff;
+            border-color: #4A6C8C;
+        }
+
+        .task-row {
+            transition: all 0.2s;
+        }
+        .task-row.completed {
+            background-color: #eaf2eb;
+            opacity: 0.8;
+        }
+        .task-row.completed .task-title {
+            text-decoration: line-through;
+            color: #648268;
+        }
+        
+        .hide {
+            display: none;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl">🛡️</span>
+                    <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Security Lab <span class="text-[#D97757]">Builder</span></h1>
+                </div>
+                <div class="hidden sm:flex items-center space-x-1">
+                    <div class="text-sm text-gray-500 font-medium px-3 py-1 bg-gray-100 rounded-full">Host OS: Windows/Linux</div>
+                    <div class="text-sm text-gray-500 font-medium px-3 py-1 bg-gray-100 rounded-full">Hypervisor: VMware Pro</div>
+                </div>
+            </div>
+            <nav class="flex space-x-8 mt-2" id="main-nav">
+                <button class="tab-btn active pb-3 text-gray-600 hover:text-gray-900 transition-colors" data-target="view-overview">1. Overview & Specs</button>
+                <button class="tab-btn pb-3 text-gray-600 hover:text-gray-900 transition-colors" data-target="view-architecture">2. Lab Architecture</button>
+                <button class="tab-btn pb-3 text-gray-600 hover:text-gray-900 transition-colors" data-target="view-roadmap">3. Implementation Roadmap</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+
+        <section id="view-overview" class="view-section">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-3 text-gray-800">Lab Overview & System Prerequisites</h2>
+                <p class="text-lg text-gray-600 max-w-4xl">
+                    Welcome to your cybersecurity home lab builder. This section outlines the purpose of the lab and ensures your host machine is ready. 
+                    You will build a comprehensive environment using VMware Workstation Pro to safely practice penetration testing and SIEM detection.
+                </p>
+            </div>
+
+            <!-- Profile Selector Alerts -->
+            <div class="mb-6 p-4 bg-[#4A6C8C] text-white rounded-xl shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h4 class="font-bold text-lg">⚠️ Hardware Detection Profile Detected: 16 GB RAM &amp; 512 GB SSD</h4>
+                    <p class="text-sm text-slate-200">Because you are running on 16 GB of RAM, you must optimize allocations so that you do not overcommit your system memory or lock your host OS.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button id="profile-16gb-btn" class="px-4 py-2 bg-[#D97757] text-white rounded-lg text-xs font-bold shadow-md hover:bg-[#c26548] transition-colors">Apply Lean 16GB Profile</button>
+                    <button id="profile-32gb-btn" class="px-4 py-2 bg-slate-700 text-slate-200 rounded-lg text-xs font-bold hover:bg-slate-600 transition-colors">Show Standard 32GB Profile</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4 flex items-center gap-2"><span>🖥️</span> Your System Limits Analysis</h3>
+                        <ul class="space-y-4 mb-6">
+                            <li class="flex items-start gap-3">
+                                <span class="text-green-600 mt-1">☑️</span>
+                                <div>
+                                    <strong class="block text-gray-800">Physical RAM: 16 GB</strong>
+                                    <span class="text-sm text-gray-600" id="ram-assessment-text">We must operate with extreme efficiency. Windows 11 host uses ~4.5 GB. pfSense is very light (1 GB). We will scale Kali down to 2-3 GB and run other systems only when actively debugging them.</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="text-amber-600 mt-1">⚠️</span>
+                                <div>
+                                    <strong class="block text-gray-800">Storage Budget: 512 GB SSD</strong>
+                                    <span class="text-sm text-gray-600">
+                                        • Windows 11 host OS system files: ~60 GB<br>
+                                        • Your Pre-existing Kali VM: 100 GB<br>
+                                        • Your Pre-existing Windows 11 VM: 50 GB<br>
+                                        <span class="font-bold text-[#D97757]">• Remaining SSD Space: ~300 GB maximum.</span> Use "Thin Provisioning" during virtual disk creations so that VMs only use the actual disk space they currently require on your drive.
+                                    </span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <h4 class="font-bold text-yellow-800 mb-2">BIOS Configuration Check</h4>
+                        <p class="text-sm text-yellow-700 mb-2">Ensure hardware virtualization is enabled in your BIOS before deploying the pfSense Firewall, otherwise VMs will throw a VT-x execution error.</p>
+                        <ol class="list-decimal list-inside text-sm text-yellow-700 space-y-1 ml-2">
+                            <li>Reboot your physical laptop and enter your BIOS setup (often F2, F10, or ESC).</li>
+                            <li>Navigate to <strong>Security</strong>, <strong>System Options</strong>, or <strong>Advanced</strong>.</li>
+                            <li>Enable <strong>Virtualization Technology (VTx)</strong> and <strong>VTd</strong> (Intel) or <strong>SVM Mode</strong> (AMD).</li>
+                            <li>Save changes and boot back into Windows.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex flex-col justify-center items-center">
+                    <h3 class="text-xl font-semibold mb-2 w-full text-left" id="chart-title">Lean RAM Allocation Strategy (16GB Host)</h3>
+                    <p class="text-sm text-gray-500 mb-6 w-full text-left" id="chart-desc">Optimized so you can run the core components without freezing your host laptop. Turn off components when not in use.</p>
+                    <div class="chart-container w-full">
+                        <canvas id="ramChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-architecture" class="view-section hide">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-3 text-gray-800">Network Architecture Explorer</h2>
+                <p class="text-lg text-gray-600 max-w-4xl">
+                    Understanding your network segmentation is crucial before building. Click on any network node below to understand its purpose, rules, and contents. 
+                    The pfSense VM acts as the central router and firewall for this entire environment.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-8 border border-gray-100 flex flex-col items-center justify-center min-h-[500px] relative overflow-hidden">
+                    
+                    <div class="w-full max-w-2xl relative">
+                        
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none" style="z-index: 0;">
+                            <div class="w-full h-1 bg-gray-200 absolute top-1/2 -translate-y-1/2"></div>
+                            <div class="h-full w-1 bg-gray-200 absolute left-1/2 -translate-x-1/2"></div>
+                        </div>
+
+                        <div class="relative z-10 grid grid-cols-3 gap-y-16 gap-x-4">
+                            
+                            <div class="flex justify-center">
+                                <div class="node-card bg-[#F4F1ED] border-2 border-[#D97757] rounded-xl p-4 w-40 text-center shadow-sm" data-node="lan">
+                                    <div class="text-2xl mb-2">⚔️</div>
+                                    <div class="font-bold text-gray-800">LAN</div>
+                                    <div class="text-xs text-gray-500">Kali Pentest VM</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-center invisible">Spacer</div>
+
+                            <div class="flex justify-center">
+                                <div class="node-card bg-[#F4F1ED] border-2 border-gray-300 rounded-xl p-4 w-40 text-center shadow-sm" data-node="ad_lab">
+                                    <div class="text-2xl mb-2">🏢</div>
+                                    <div class="font-bold text-gray-800">AD_LAB</div>
+                                    <div class="text-xs text-gray-500">Vulnerable Forest</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-center invisible">Spacer</div>
+
+                            <div class="flex justify-center items-center">
+                                <div class="node-card bg-gray-800 border-2 border-gray-900 rounded-xl p-6 w-48 text-center shadow-lg active-node" data-node="pfsense">
+                                    <div class="text-4xl mb-2">🧱</div>
+                                    <div class="font-bold text-white text-lg">pfSense Firewall</div>
+                                    <div class="text-xs text-gray-300 mt-1">NAT & Routing Hub</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-center invisible">Spacer</div>
+
+                            <div class="flex justify-center">
+                                <div class="node-card bg-[#F4F1ED] border-2 border-gray-300 rounded-xl p-4 w-40 text-center shadow-sm" data-node="isolated">
+                                    <div class="text-2xl mb-2">🚷</div>
+                                    <div class="font-bold text-gray-800">ISOLATED</div>
+                                    <div class="text-xs text-gray-500">Vulnhub / HackMyVM</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-center">
+                                <div class="node-card bg-[#F4F1ED] border-2 border-gray-300 rounded-xl p-4 w-40 text-center shadow-sm mt-8" data-node="siem">
+                                    <div class="text-2xl mb-2">👁️</div>
+                                    <div class="font-bold text-gray-800">SIEM</div>
+                                    <div class="text-xs text-gray-500">Wazuh & Suricata</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-center">
+                                <div class="node-card bg-[#F4F1ED] border-2 border-gray-300 rounded-xl p-4 w-40 text-center shadow-sm" data-node="sec_egress">
+                                    <div class="text-2xl mb-2">🌐</div>
+                                    <div class="font-bold text-gray-800">SEC_EGRESS</div>
+                                    <div class="text-xs text-gray-500">Internet Access Only</div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex flex-col h-full">
+                    <h3 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-800">Node Inspector</h3>
+                    
+                    <div id="inspector-content" class="flex-grow">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span id="inspector-icon" class="text-4xl">🧱</span>
+                            <h4 id="inspector-title" class="text-2xl font-bold text-[#4A6C8C]">pfSense Firewall</h4>
+                        </div>
+                        <p id="inspector-desc" class="text-gray-600 mb-6 leading-relaxed">
+                            The central brain of your lab. It acts as a NAT firewall for the entire environment, separating your vulnerable VMs from your host's real network. You will configure specific firewall rules here to control traffic between subnets.
+                        </p>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h5 class="text-sm font-bold text-gray-700 uppercase tracking-wider mb-2">Key Properties</h5>
+                            <ul id="inspector-props" class="space-y-2 text-sm text-gray-600">
+                                <li>• Provides granular control over VMware's default NAT.</li>
+                                <li>• Routes traffic between all defined lab subnets.</li>
+                                <li>• Protects host network from lab malware/attacks.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-roadmap" class="view-section hide">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-3 text-gray-800">Implementation Roadmap</h2>
+                <p class="text-lg text-gray-600 max-w-4xl">
+                    Follow these modules in order to build out your lab. I have pre-checked the software you indicated is already installed. 
+                    Click the links to read the detailed tutorials, then check them off here to track your progress.
+                </p>
+            </div>
+
+            <!-- Context Quick Coach Box -->
+            <div class="mb-6 p-5 bg-amber-50 border border-amber-200 rounded-xl">
+                <h4 class="font-bold text-amber-900 mb-1 flex items-center gap-2"><span>💡</span> Crucial Concepts to Know Before Starting pfSense Configuration</h4>
+                <p class="text-sm text-amber-800 mb-4">
+                    Setting up pfSense requires setting up **Virtual Switches** (VMnets) within VMware's Virtual Network Editor. Here is how pfSense bridges them:
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div class="bg-white p-3 rounded-lg border border-amber-100 shadow-xs">
+                        <strong class="text-amber-900 block mb-1">1. Interface #1: WAN (VMnet8 NAT)</strong>
+                        <p class="text-amber-700">Connects the firewall directly to VMware's default NAT network. This allows pfSense to retrieve outbound Internet access and download its configurations/packages.</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-amber-100 shadow-xs">
+                        <strong class="text-amber-900 block mb-1">2. Interface #2: LAN (VMnet2 Host-Only)</strong>
+                        <p class="text-amber-700">Connects to your custom, isolated LAN. Your Kali VM will also be assigned to this exact VMnet2 switch so they can communicate together securely.</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-amber-100 shadow-xs">
+                        <strong class="text-amber-900 block mb-1">3. The Goal of pfSense</strong>
+                        <p class="text-amber-700">By disabling direct VMware NAT for targets, Kali and targets cannot talk directly to your physical router or home network. They *must* talk via pfSense.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                
+                <div class="p-6 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800">Lab Build Progress</h3>
+                        <p class="text-sm text-gray-500" id="progress-text">2 of 10 Modules Completed</p>
+                    </div>
+                    <div class="w-1/2 max-w-xs bg-gray-200 rounded-full h-4 overflow-hidden">
+                        <div id="progress-bar" class="bg-[#D97757] h-4 transition-all duration-500 ease-out" style="width: 20%"></div>
+                    </div>
+                </div>
+
+                <div class="divide-y divide-gray-100" id="task-list">
+                    
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const nodesData = {
+            'pfsense': {
+                title: 'pfSense Firewall',
+                icon: '🧱',
+                desc: 'The central brain of your lab. It acts as a NAT firewall for the entire environment, segmenting the lab from the host\'s network with more granular control than VMware\'s default NAT.',
+                props: [
+                    '• Routes traffic between all defined lab subnets.',
+                    '• Protects host network from lab malware/attacks.',
+                    '• Requires multiple virtual network adapters.'
+                ]
+            },
+            'lan': {
+                title: 'Default LAN (Kali)',
+                icon: '⚔️',
+                desc: 'This network houses your primary attacking machine. In this lab, it is dedicated to your pre-installed Kali Linux VM.',
+                props: [
+                    '• Can access the Internet.',
+                    '• Can reach target VMs based on pfSense rules.',
+                    '• Home base for scanning and exploitation.'
+                ]
+            },
+            'isolated': {
+                title: 'ISOLATED Network',
+                icon: '🚷',
+                desc: 'A secure quarantine zone. Firewall rules here prevent any Internet access. It only allows communication to and from the Kali VM.',
+                props: [
+                    '• No outbound internet access.',
+                    '• Houses imported Vulnhub and HackMyVM boxes.',
+                    '• Safely detonates vulnerable web apps.'
+                ]
+            },
+            'ad_lab': {
+                title: 'AD_LAB Network',
+                icon: '🏢',
+                desc: 'A dedicated network for building a Windows Active Directory forest. You will configure this forest to be intentionally vulnerable to practice enterprise attacks.',
+                props: [
+                    '• Contains Windows Server domain controllers.',
+                    '• Contains Windows client endpoints.',
+                    '• Used for Kerberoasting, LLMNR poisoning, etc.'
+                ]
+            },
+            'sec_egress': {
+                title: 'SEC_EGRESS Network',
+                icon: '🌐',
+                desc: 'An advanced networking module added later. This is for vulnerable hosts that require Internet access to function, but must be restricted from attacking other private IPs.',
+                props: [
+                    '• Allowed outbound to the Internet.',
+                    '• Blocked from communicating with LAN, ISOLATED, or AD_LAB.',
+                    '• Good for testing malware that needs C2 callbacks.'
+                ]
+            },
+            'siem': {
+                title: 'SIEM & Detection',
+                icon: '👁️',
+                desc: 'The final module. You will capture packets on all networks, pass them through a Suricata Network Intrusion Detection System (NIDS), and send logs to a Wazuh SIEM.',
+                props: [
+                    '• Port mirroring/packet capture on pfSense.',
+                    '• Suricata analyzes traffic for malicious signatures.',
+                    '• Wazuh provides a dashboard for alerts and logs.'
+                ]
+            }
+        };
+
+        const roadmapTasks = [
+            { id: 1, title: 'Install VMware Workstation Pro', link: '#', isDone: true, note: 'Pre-requisite (Already installed by user)' },
+            { id: 2, title: 'Import Kali from Offensive Security Images', link: '#', isDone: true, note: 'Pre-requisite (Already installed by user - configured with 100GB space)' },
+            { id: 3, title: 'Building & Configuring pfSense VM', link: 'https://benheater.com/vmware-workstation-lab-configure-pfsense/', isDone: false, note: 'Sets up the core routing and NAT firewall (Requires 1GB RAM allocate).' },
+            { id: 4, title: 'Adding Vulnhub VMs to the Lab', link: 'https://benheater.com/vmware-workstation-lab-adding-vulnhub-vms/', isDone: false, note: 'Imports boot2root Linux machines to the ISOLATED network.' },
+            { id: 5, title: 'Adding HackMyVM Boxes to the Lab', link: 'https://benheater.com/vmware-workstation-lab-adding-hackmyvm-boxes/', isDone: false, note: 'Imports additional vulnerable targets.' },
+            { id: 6, title: 'Building the Active Directory Lab', link: 'https://benheater.com/vmware-workstation-lab-active-directory-lab/', isDone: false, note: 'Stands up the Windows Server AD Forest.' },
+            { id: 7, title: 'Hack Your Active Directory Lab', link: 'https://benheater.com/hack-your-vmware-ad-lab/', isDone: false, note: 'Configures intentional misconfigurations in AD.' },
+            { id: 8, title: 'Set up a Pivoting Lab', link: 'https://benheater.com/vmware-workstation-lab-external-pentest-practice/', isDone: false, note: 'Practice traversing through compromised hosts.' },
+            { id: 9, title: 'Adding Another Interface to pfSense (SEC_EGRESS)', link: 'https://benheater.com/vmware-workstation-lab-adding-interface-pfsense/', isDone: false, note: 'Advanced network configuration and firewall rules.' },
+            { id: 10, title: 'Adding Wazuh SIEM and Suricata NIDS', link: 'https://benheater.com/vmware-workstation-lab-wazuh-siem-and-nids/', isDone: false, note: 'The final step: building your detection capabilities.' }
+        ];
+
+        let ramChartInstance = null;
+        let currentProfile = '16gb';
+
+        function initNavigation() {
+            const btns = document.querySelectorAll('.tab-btn');
+            const views = document.querySelectorAll('.view-section');
+
+            btns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    btns.forEach(b => b.classList.remove('active', 'border-b-4', 'border-[#D97757]'));
+                    e.target.classList.add('active', 'border-b-4', 'border-[#D97757]');
+
+                    const targetId = e.target.getAttribute('data-target');
+                    views.forEach(v => {
+                        if (v.id === targetId) {
+                            v.classList.remove('hide');
+                        } else {
+                            v.classList.add('hide');
+                        }
+                    });
+                });
+            });
+            
+            btns[0].classList.add('border-b-4', 'border-[#D97757]');
+        }
+
+        function initArchitectureMap() {
+            const nodes = document.querySelectorAll('.node-card');
+            const iTitle = document.getElementById('inspector-title');
+            const iIcon = document.getElementById('inspector-icon');
+            const iDesc = document.getElementById('inspector-desc');
+            const iProps = document.getElementById('inspector-props');
+
+            nodes.forEach(node => {
+                node.addEventListener('click', () => {
+                    nodes.forEach(n => {
+                        n.classList.remove('active-node', 'bg-gray-800', 'text-white', 'border-gray-900', 'bg-[#4A6C8C]');
+                        n.classList.add('bg-[#F4F1ED]');
+                        const t1 = n.querySelector('.font-bold');
+                        const t2 = n.querySelector('.text-xs');
+                        if(t1) t1.classList.replace('text-white', 'text-gray-800');
+                        if(t2) t2.classList.replace('text-gray-300', 'text-gray-500');
+                    });
+
+                    node.classList.remove('bg-[#F4F1ED]');
+                    node.classList.add('active-node', 'bg-[#4A6C8C]', 'text-white', 'border-[#4A6C8C]');
+                    const nT1 = node.querySelector('.font-bold');
+                    const nT2 = node.querySelector('.text-xs');
+                    if(nT1) nT1.classList.replace('text-gray-800', 'text-white');
+                    if(nT2) nT2.classList.replace('text-gray-500', 'text-gray-300');
+
+                    const nodeKey = node.getAttribute('data-node');
+                    const data = nodesData[nodeKey];
+
+                    iTitle.innerText = data.title;
+                    iIcon.innerText = data.icon;
+                    iDesc.innerText = data.desc;
+                    
+                    iProps.innerHTML = '';
+                    data.props.forEach(prop => {
+                        const li = document.createElement('li');
+                        li.innerText = prop;
+                        iProps.appendChild(li);
+                    });
+                });
+            });
+        }
+
+        function renderRoadmap() {
+            const listEl = document.getElementById('task-list');
+            listEl.innerHTML = '';
+            
+            let completedCount = 0;
+
+            roadmapTasks.forEach((task, index) => {
+                if (task.isDone) completedCount++;
+
+                const row = document.createElement('div');
+                row.className = `task-row p-4 sm:p-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between ${task.isDone ? 'completed' : 'bg-white hover:bg-gray-50'}`;
+                
+                const leftSection = document.createElement('div');
+                leftSection.className = 'flex items-start gap-4';
+                
+                const checkBtn = document.createElement('button');
+                checkBtn.className = `mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors focus:outline-none ${task.isDone ? 'bg-[#648268] border-[#648268] text-white' : 'border-gray-300 text-transparent hover:border-[#D97757]'}`;
+                checkBtn.innerHTML = '✓';
+                checkBtn.onclick = () => toggleTask(index);
+                
+                const textDiv = document.createElement('div');
+                
+                const titleWrap = document.createElement('div');
+                titleWrap.className = 'flex items-center gap-2';
+                
+                const numSpan = document.createElement('span');
+                numSpan.className = 'text-xs font-bold bg-gray-200 text-gray-600 px-2 py-0.5 rounded';
+                numSpan.innerText = `Mod ${task.id}`;
+                
+                const title = document.createElement('h4');
+                title.className = `task-title font-semibold text-lg ${task.isDone ? 'text-gray-500' : 'text-gray-800'}`;
+                title.innerText = task.title;
+
+                titleWrap.appendChild(numSpan);
+                titleWrap.appendChild(title);
+                
+                const note = document.createElement('p');
+                note.className = 'text-sm text-gray-500 mt-1';
+                note.innerText = task.note;
+
+                textDiv.appendChild(titleWrap);
+                textDiv.appendChild(note);
+                leftSection.appendChild(checkBtn);
+                leftSection.appendChild(textDiv);
+                
+                const rightSection = document.createElement('div');
+                
+                if (task.link !== '#') {
+                    const linkBtn = document.createElement('a');
+                    linkBtn.href = task.link;
+                    linkBtn.target = '_blank';
+                    linkBtn.className = 'inline-flex items-center gap-1 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#D97757] transition-colors';
+                    linkBtn.innerHTML = 'Read Guide ↗';
+                    rightSection.appendChild(linkBtn);
+                } else {
+                    const statusBadge = document.createElement('span');
+                    statusBadge.className = 'inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-bold';
+                    statusBadge.innerHTML = 'Ready';
+                    rightSection.appendChild(statusBadge);
+                }
+
+                row.appendChild(leftSection);
+                row.appendChild(rightSection);
+                listEl.appendChild(row);
+            });
+
+            const pct = Math.round((completedCount / roadmapTasks.length) * 100);
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+            document.getElementById('progress-text').innerText = `${completedCount} of ${roadmapTasks.length} Modules Completed`;
+        }
+
+        function toggleTask(index) {
+            roadmapTasks[index].isDone = !roadmapTasks[index].isDone;
+            renderRoadmap();
+        }
+
+        function renderChart() {
+            if (ramChartInstance) {
+                ramChartInstance.destroy();
+            }
+
+            const ctx = document.getElementById('ramChart').getContext('2d');
+            
+            let dataValues = [];
+            let dataLabels = [];
+            let chartColors = [];
+
+            if (currentProfile === '16gb') {
+                dataLabels = [
+                    'pfSense (1 GB)', 
+                    'Kali Pentest (2 GB - Lean)', 
+                    'Target VM / Win Client (4 GB)', 
+                    'Host OS Win 11 (5.5 GB Reserve)',
+                    'Safety Buffer / SIEM Off (3.5 GB)'
+                ];
+                dataValues = [1, 2, 4, 5.5, 3.5];
+                chartColors = ['#4A6C8C', '#D97757', '#648268', '#94A3B8', '#E2E8F0'];
+                
+                document.getElementById('chart-title').innerText = "Lean RAM Strategy (16GB Host Profile)";
+                document.getElementById('chart-desc').innerText = "Run pfSense, Lean Kali, and one Target VM simultaneously. Do NOT start SIEM and AD together unless you suspend others first.";
+                document.getElementById('ram-assessment-text').innerText = "We must operate with extreme efficiency. Windows 11 host uses ~4.5-5 GB. pfSense is super lightweight (1 GB). We scale Kali down to 2 GB and run target systems dynamically.";
+            } else {
+                dataLabels = [
+                    'pfSense (2 GB)', 
+                    'Kali Pentest (6 GB)', 
+                    'Windows AD VMs (10 GB)', 
+                    'SIEM / Wazuh (8 GB)', 
+                    'Host OS / Reserve (6 GB)'
+                ];
+                dataValues = [2, 6, 10, 8, 6];
+                chartColors = ['#4A6C8C', '#D97757', '#648268', '#F2C94C', '#E2E8F0'];
+
+                document.getElementById('chart-title').innerText = "Standard RAM Strategy (32GB Host Profile)";
+                document.getElementById('chart-desc').innerText = "Ideal for massive multi-node simulations. Allows running active-directory components and heavy SIEM stacks concurrently.";
+                document.getElementById('ram-assessment-text').innerText = "This requires a 32 GB RAM hardware baseline. Safe for multi-VM labs.";
+            }
+
+            ramChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: dataLabels,
+                    datasets: [{
+                        data: dataValues,
+                        backgroundColor: chartColors,
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    family: "'Segoe UI', sans-serif",
+                                    size: 11
+                                },
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' ' + context.label.split(' (')[0] + ': ~' + context.raw + ' GB';
+                                }
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        function initProfileToggles() {
+            const btn16 = document.getElementById('profile-16gb-btn');
+            const btn32 = document.getElementById('profile-32gb-btn');
+
+            btn16.addEventListener('click', () => {
+                currentProfile = '16gb';
+                btn16.className = "px-4 py-2 bg-[#D97757] text-white rounded-lg text-xs font-bold shadow-md transition-colors";
+                btn32.className = "px-4 py-2 bg-slate-700 text-slate-200 rounded-lg text-xs font-bold hover:bg-slate-600 transition-colors";
+                renderChart();
+            });
+
+            btn32.addEventListener('click', () => {
+                currentProfile = '32gb';
+                btn32.className = "px-4 py-2 bg-[#D97757] text-white rounded-lg text-xs font-bold shadow-md transition-colors";
+                btn16.className = "px-4 py-2 bg-slate-700 text-slate-200 rounded-lg text-xs font-bold hover:bg-slate-600 transition-colors";
+                renderChart();
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initNavigation();
+            initArchitectureMap();
+            renderRoadmap();
+            initProfileToggles();
+            renderChart();
+        });
+    </script>
+</body>
+</html></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Chosen Palette: Warm Neutrals & Muted Tech Accents (Sand #F4F1ED, Surface #FFFFFF, Text #2D3748, Accent-Active #D97757, Accent-Done #648268, Accent-Info #4A6C8C) -->
+    <!-- Application Structure Plan: The SPA uses a tabbed dashboard structure: 1. "Overview & Specs" to set expectations and hardware budgets. 2. "Network Architecture" featuring an interactive HTML/CSS map to understand the topology before building. 3. "Implementation Roadmap" providing a step-by-step interactive checklist of the provided links, with VMware and Kali marked as pre-completed based on user input. This structure was chosen to separate theoretical understanding (Architecture) from practical execution (Roadmap), preventing cognitive overload. -->
+    <!-- Visualization & Content Choices: 1. Hardware Specs -> Resource Planner -> Chart.js Doughnut -> Interactive hover -> Justification: Helps users visualize resource budgeting (RAM/Disk). 2. Lab Topology -> Interactive HTML Grid Diagram -> Clickable nodes -> Justification: Replaces static images with an interactive map to explain what each network segment does. 3. Build Process -> Interactive Checklist -> JS toggle state -> Justification: Guides the user step-by-step as requested. -> NO SVG/Mermaid used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            background-color: #F4F1ED;
+            color: #2D3748;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+
+        .tab-btn.active {
+            border-bottom: 4px solid #D97757;
+            color: #D97757;
+            font-weight: bold;
+        }
+
+        .node-card {
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .node-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-color: #4A6C8C;
+        }
+        .node-card.active-node {
+            background-color: #4A6C8C;
+            color: #ffffff;
+            border-color: #4A6C8C;
+        }
+
+        .task-row {
+            transition: all 0.2s;
+        }
+        .task-row.completed {
+            background-color: #eaf2eb;
+            opacity: 0.8;
+        }
+        .task-row.completed .task-title {
+            text-decoration: line-through;
+            color: #648268;
+        }
+        
+        .hide {
+            display: none;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl">🛡️</span>
+                    <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Security Lab <span class="text-[#D97757]">Builder</span></h1>
+                </div>
+                <div class="hidden sm:flex items-center space-x-1">
+                    <div class="text-sm text-gray-500 font-medium px-3 py-1 bg-gray-100 rounded-full">Host OS: Windows/Linux</div>
+                    <div class="text-sm text-gray-500 font-medium px-3 py-1 bg-gray-100 rounded-full">Hypervisor: VMware Pro</div>
+                </div>
+            </div>
+            <nav class="flex space-x-8 mt-2" id="main-nav">
+                <button class="tab-btn active pb-3 text-gray-600 hover:text-gray-900 transition-colors" data-target="view-overview">1. Overview & Specs</button>
+                <button class="tab-btn pb-3 text-gray-600 hover:text-gray-900 transition-colors" data-target="view-architecture">2. Lab Architecture</button>
+                <button class="tab-btn pb-3 text-gray-600 hover:text-gray-900 transition-colors" data-target="view-roadmap">3. Implementation Roadmap</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+
+        <section id="view-overview" class="view-section">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-3 text-gray-800">Lab Overview & System Prerequisites</h2>
+                <p class="text-lg text-gray-600 max-w-4xl">
+                    Welcome to your cybersecurity home lab builder. This section outlines the purpose of the lab and ensures your host machine is ready. 
+                    You will build a comprehensive environment using VMware Workstation Pro to safely practice penetration testing and SIEM detection.
+                </p>
+            </div>
+
+            <!-- Profile Selector Alerts -->
+            <div class="mb-6 p-4 bg-[#4A6C8C] text-white rounded-xl shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h4 class="font-bold text-lg">⚠️ Hardware Detection Profile Detected: 16 GB RAM &amp; 512 GB SSD</h4>
+                    <p class="text-sm text-slate-200">Because you are running on 16 GB of RAM, you must optimize allocations so that you do not overcommit your system memory or lock your host OS.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button id="profile-16gb-btn" class="px-4 py-2 bg-[#D97757] text-white rounded-lg text-xs font-bold shadow-md hover:bg-[#c26548] transition-colors">Apply Lean 16GB Profile</button>
+                    <button id="profile-32gb-btn" class="px-4 py-2 bg-slate-700 text-slate-200 rounded-lg text-xs font-bold hover:bg-slate-600 transition-colors">Show Standard 32GB Profile</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4 flex items-center gap-2"><span>🖥️</span> Your System Limits Analysis</h3>
+                        <ul class="space-y-4 mb-6">
+                            <li class="flex items-start gap-3">
+                                <span class="text-green-600 mt-1">☑️</span>
+                                <div>
+                                    <strong class="block text-gray-800">Physical RAM: 16 GB</strong>
+                                    <span class="text-sm text-gray-600" id="ram-assessment-text">We must operate with extreme efficiency. Windows 11 host uses ~4.5 GB. pfSense is very light (1 GB). We will scale Kali down to 2-3 GB and run other systems only when actively debugging them.</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="text-amber-600 mt-1">⚠️</span>
+                                <div>
+                                    <strong class="block text-gray-800">Storage Budget: 512 GB SSD</strong>
+                                    <span class="text-sm text-gray-600">
+                                        • Windows 11 host OS system files: ~60 GB<br>
+                                        • Your Pre-existing Kali VM: 100 GB<br>
+                                        • Your Pre-existing Windows 11 VM: 50 GB<br>
+                                        <span class="font-bold text-[#D97757]">• Remaining SSD Space: ~300 GB maximum.</span> Use "Thin Provisioning" during virtual disk creations so that VMs only use the actual disk space they currently require on your drive.
+                                    </span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <h4 class="font-bold text-yellow-800 mb-2">BIOS Configuration Check</h4>
+                        <p class="text-sm text-yellow-700 mb-2">Ensure hardware virtualization is enabled in your BIOS before deploying the pfSense Firewall, otherwise VMs will throw a VT-x execution error.</p>
+                        <ol class="list-decimal list-inside text-sm text-yellow-700 space-y-1 ml-2">
+                            <li>Reboot your physical laptop and enter your BIOS setup (often F2, F10, or ESC).</li>
+                            <li>Navigate to <strong>Security</strong>, <strong>System Options</strong>, or <strong>Advanced</strong>.</li>
+                            <li>Enable <strong>Virtualization Technology (VTx)</strong> and <strong>VTd</strong> (Intel) or <strong>SVM Mode</strong> (AMD).</li>
+                            <li>Save changes and boot back into Windows.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex flex-col justify-center items-center">
+                    <h3 class="text-xl font-semibold mb-2 w-full text-left" id="chart-title">Lean RAM Allocation Strategy (16GB Host)</h3>
+                    <p class="text-sm text-gray-500 mb-6 w-full text-left" id="chart-desc">Optimized so you can run the core components without freezing your host laptop. Turn off components when not in use.</p>
+                    <div class="chart-container w-full">
+                        <canvas id="ramChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-architecture" class="view-section hide">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-3 text-gray-800">Network Architecture Explorer</h2>
+                <p class="text-lg text-gray-600 max-w-4xl">
+                    Understanding your network segmentation is crucial before building. Click on any network node below to understand its purpose, rules, and contents. 
+                    The pfSense VM acts as the central router and firewall for this entire environment.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-8 border border-gray-100 flex flex-col items-center justify-center min-h-[500px] relative overflow-hidden">
+                    
+                    <div class="w-full max-w-2xl relative">
+                        
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none" style="z-index: 0;">
+                            <div class="w-full h-1 bg-gray-200 absolute top-1/2 -translate-y-1/2"></div>
+                            <div class="h-full w-1 bg-gray-200 absolute left-1/2 -translate-x-1/2"></div>
+                        </div>
+
+                        <div class="relative z-10 grid grid-cols-3 gap-y-16 gap-x-4">
+                            
+                            <div class="flex justify-center">
+                                <div class="node-card bg-[#F4F1ED] border-2 border-[#D97757] rounded-xl p-4 w-40 text-center shadow-sm" data-node="lan">
+                                    <div class="text-2xl mb-2">⚔️</div>
+                                    <div class="font-bold text-gray-800">LAN</div>
+                                    <div class="text-xs text-gray-500">Kali Pentest VM</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-center invisible">Spacer</div>
+
+                            <div class="flex justify-center">
+                                <div class="node-card bg-[#F4F1ED] border-2 border-gray-300 rounded-xl p-4 w-40 text-center shadow-sm" data-node="ad_lab">
+                                    <div class="text-2xl mb-2">🏢</div>
+                                    <div class="font-bold text-gray-800">AD_LAB</div>
+                                    <div class="text-xs text-gray-500">Vulnerable Forest</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-center invisible">Spacer</div>
+
+                            <div class="flex justify-center items-center">
+                                <div class="node-card bg-gray-800 border-2 border-gray-900 rounded-xl p-6 w-48 text-center shadow-lg active-node" data-node="pfsense">
+                                    <div class="text-4xl mb-2">🧱</div>
+                                    <div class="font-bold text-white text-lg">pfSense Firewall</div>
+                                    <div class="text-xs text-gray-300 mt-1">NAT & Routing Hub</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-center invisible">Spacer</div>
+
+                            <div class="flex justify-center">
+                                <div class="node-card bg-[#F4F1ED] border-2 border-gray-300 rounded-xl p-4 w-40 text-center shadow-sm" data-node="isolated">
+                                    <div class="text-2xl mb-2">🚷</div>
+                                    <div class="font-bold text-gray-800">ISOLATED</div>
+                                    <div class="text-xs text-gray-500">Vulnhub / HackMyVM</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-center">
+                                <div class="node-card bg-[#F4F1ED] border-2 border-gray-300 rounded-xl p-4 w-40 text-center shadow-sm mt-8" data-node="siem">
+                                    <div class="text-2xl mb-2">👁️</div>
+                                    <div class="font-bold text-gray-800">SIEM</div>
+                                    <div class="text-xs text-gray-500">Wazuh & Suricata</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-center">
+                                <div class="node-card bg-[#F4F1ED] border-2 border-gray-300 rounded-xl p-4 w-40 text-center shadow-sm" data-node="sec_egress">
+                                    <div class="text-2xl mb-2">🌐</div>
+                                    <div class="font-bold text-gray-800">SEC_EGRESS</div>
+                                    <div class="text-xs text-gray-500">Internet Access Only</div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex flex-col h-full">
+                    <h3 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-800">Node Inspector</h3>
+                    
+                    <div id="inspector-content" class="flex-grow">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span id="inspector-icon" class="text-4xl">🧱</span>
+                            <h4 id="inspector-title" class="text-2xl font-bold text-[#4A6C8C]">pfSense Firewall</h4>
+                        </div>
+                        <p id="inspector-desc" class="text-gray-600 mb-6 leading-relaxed">
+                            The central brain of your lab. It acts as a NAT firewall for the entire environment, separating your vulnerable VMs from your host's real network. You will configure specific firewall rules here to control traffic between subnets.
+                        </p>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h5 class="text-sm font-bold text-gray-700 uppercase tracking-wider mb-2">Key Properties</h5>
+                            <ul id="inspector-props" class="space-y-2 text-sm text-gray-600">
+                                <li>• Provides granular control over VMware's default NAT.</li>
+                                <li>• Routes traffic between all defined lab subnets.</li>
+                                <li>• Protects host network from lab malware/attacks.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-roadmap" class="view-section hide">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-3 text-gray-800">Implementation Roadmap</h2>
+                <p class="text-lg text-gray-600 max-w-4xl">
+                    Follow these modules in order to build out your lab. I have pre-checked the software you indicated is already installed. 
+                    Click the links to read the detailed tutorials, then check them off here to track your progress.
+                </p>
+            </div>
+
+            <!-- Context Quick Coach Box -->
+            <div class="mb-6 p-5 bg-amber-50 border border-amber-200 rounded-xl">
+                <h4 class="font-bold text-amber-900 mb-1 flex items-center gap-2"><span>💡</span> Crucial Concepts to Know Before Starting pfSense Configuration</h4>
+                <p class="text-sm text-amber-800 mb-4">
+                    Setting up pfSense requires setting up **Virtual Switches** (VMnets) within VMware's Virtual Network Editor. Here is how pfSense bridges them:
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div class="bg-white p-3 rounded-lg border border-amber-100 shadow-xs">
+                        <strong class="text-amber-900 block mb-1">1. Interface #1: WAN (VMnet8 NAT)</strong>
+                        <p class="text-amber-700">Connects the firewall directly to VMware's default NAT network. This allows pfSense to retrieve outbound Internet access and download its configurations/packages.</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-amber-100 shadow-xs">
+                        <strong class="text-amber-900 block mb-1">2. Interface #2: LAN (VMnet2 Host-Only)</strong>
+                        <p class="text-amber-700">Connects to your custom, isolated LAN. Your Kali VM will also be assigned to this exact VMnet2 switch so they can communicate together securely.</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-amber-100 shadow-xs">
+                        <strong class="text-amber-900 block mb-1">3. The Goal of pfSense</strong>
+                        <p class="text-amber-700">By disabling direct VMware NAT for targets, Kali and targets cannot talk directly to your physical router or home network. They *must* talk via pfSense.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                
+                <div class="p-6 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800">Lab Build Progress</h3>
+                        <p class="text-sm text-gray-500" id="progress-text">2 of 10 Modules Completed</p>
+                    </div>
+                    <div class="w-1/2 max-w-xs bg-gray-200 rounded-full h-4 overflow-hidden">
+                        <div id="progress-bar" class="bg-[#D97757] h-4 transition-all duration-500 ease-out" style="width: 20%"></div>
+                    </div>
+                </div>
+
+                <div class="divide-y divide-gray-100" id="task-list">
+                    
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const nodesData = {
+            'pfsense': {
+                title: 'pfSense Firewall',
+                icon: '🧱',
+                desc: 'The central brain of your lab. It acts as a NAT firewall for the entire environment, segmenting the lab from the host\'s network with more granular control than VMware\'s default NAT.',
+                props: [
+                    '• Routes traffic between all defined lab subnets.',
+                    '• Protects host network from lab malware/attacks.',
+                    '• Requires multiple virtual network adapters.'
+                ]
+            },
+            'lan': {
+                title: 'Default LAN (Kali)',
+                icon: '⚔️',
+                desc: 'This network houses your primary attacking machine. In this lab, it is dedicated to your pre-installed Kali Linux VM.',
+                props: [
+                    '• Can access the Internet.',
+                    '• Can reach target VMs based on pfSense rules.',
+                    '• Home base for scanning and exploitation.'
+                ]
+            },
+            'isolated': {
+                title: 'ISOLATED Network',
+                icon: '🚷',
+                desc: 'A secure quarantine zone. Firewall rules here prevent any Internet access. It only allows communication to and from the Kali VM.',
+                props: [
+                    '• No outbound internet access.',
+                    '• Houses imported Vulnhub and HackMyVM boxes.',
+                    '• Safely detonates vulnerable web apps.'
+                ]
+            },
+            'ad_lab': {
+                title: 'AD_LAB Network',
+                icon: '🏢',
+                desc: 'A dedicated network for building a Windows Active Directory forest. You will configure this forest to be intentionally vulnerable to practice enterprise attacks.',
+                props: [
+                    '• Contains Windows Server domain controllers.',
+                    '• Contains Windows client endpoints.',
+                    '• Used for Kerberoasting, LLMNR poisoning, etc.'
+                ]
+            },
+            'sec_egress': {
+                title: 'SEC_EGRESS Network',
+                icon: '🌐',
+                desc: 'An advanced networking module added later. This is for vulnerable hosts that require Internet access to function, but must be restricted from attacking other private IPs.',
+                props: [
+                    '• Allowed outbound to the Internet.',
+                    '• Blocked from communicating with LAN, ISOLATED, or AD_LAB.',
+                    '• Good for testing malware that needs C2 callbacks.'
+                ]
+            },
+            'siem': {
+                title: 'SIEM & Detection',
+                icon: '👁️',
+                desc: 'The final module. You will capture packets on all networks, pass them through a Suricata Network Intrusion Detection System (NIDS), and send logs to a Wazuh SIEM.',
+                props: [
+                    '• Port mirroring/packet capture on pfSense.',
+                    '• Suricata analyzes traffic for malicious signatures.',
+                    '• Wazuh provides a dashboard for alerts and logs.'
+                ]
+            }
+        };
+
+        const roadmapTasks = [
+            { id: 1, title: 'Install VMware Workstation Pro', link: '#', isDone: true, note: 'Pre-requisite (Already installed by user)' },
+            { id: 2, title: 'Import Kali from Offensive Security Images', link: '#', isDone: true, note: 'Pre-requisite (Already installed by user - configured with 100GB space)' },
+            { id: 3, title: 'Building & Configuring pfSense VM', link: 'https://benheater.com/vmware-workstation-lab-configure-pfsense/', isDone: false, note: 'Sets up the core routing and NAT firewall (Requires 1GB RAM allocate).' },
+            { id: 4, title: 'Adding Vulnhub VMs to the Lab', link: 'https://benheater.com/vmware-workstation-lab-adding-vulnhub-vms/', isDone: false, note: 'Imports boot2root Linux machines to the ISOLATED network.' },
+            { id: 5, title: 'Adding HackMyVM Boxes to the Lab', link: 'https://benheater.com/vmware-workstation-lab-adding-hackmyvm-boxes/', isDone: false, note: 'Imports additional vulnerable targets.' },
+            { id: 6, title: 'Building the Active Directory Lab', link: 'https://benheater.com/vmware-workstation-lab-active-directory-lab/', isDone: false, note: 'Stands up the Windows Server AD Forest.' },
+            { id: 7, title: 'Hack Your Active Directory Lab', link: 'https://benheater.com/hack-your-vmware-ad-lab/', isDone: false, note: 'Configures intentional misconfigurations in AD.' },
+            { id: 8, title: 'Set up a Pivoting Lab', link: 'https://benheater.com/vmware-workstation-lab-external-pentest-practice/', isDone: false, note: 'Practice traversing through compromised hosts.' },
+            { id: 9, title: 'Adding Another Interface to pfSense (SEC_EGRESS)', link: 'https://benheater.com/vmware-workstation-lab-adding-interface-pfsense/', isDone: false, note: 'Advanced network configuration and firewall rules.' },
+            { id: 10, title: 'Adding Wazuh SIEM and Suricata NIDS', link: 'https://benheater.com/vmware-workstation-lab-wazuh-siem-and-nids/', isDone: false, note: 'The final step: building your detection capabilities.' }
+        ];
+
+        let ramChartInstance = null;
+        let currentProfile = '16gb';
+
+        function initNavigation() {
+            const btns = document.querySelectorAll('.tab-btn');
+            const views = document.querySelectorAll('.view-section');
+
+            btns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    btns.forEach(b => b.classList.remove('active', 'border-b-4', 'border-[#D97757]'));
+                    e.target.classList.add('active', 'border-b-4', 'border-[#D97757]');
+
+                    const targetId = e.target.getAttribute('data-target');
+                    views.forEach(v => {
+                        if (v.id === targetId) {
+                            v.classList.remove('hide');
+                        } else {
+                            v.classList.add('hide');
+                        }
+                    });
+                });
+            });
+            
+            btns[0].classList.add('border-b-4', 'border-[#D97757]');
+        }
+
+        function initArchitectureMap() {
+            const nodes = document.querySelectorAll('.node-card');
+            const iTitle = document.getElementById('inspector-title');
+            const iIcon = document.getElementById('inspector-icon');
+            const iDesc = document.getElementById('inspector-desc');
+            const iProps = document.getElementById('inspector-props');
+
+            nodes.forEach(node => {
+                node.addEventListener('click', () => {
+                    nodes.forEach(n => {
+                        n.classList.remove('active-node', 'bg-gray-800', 'text-white', 'border-gray-900', 'bg-[#4A6C8C]');
+                        n.classList.add('bg-[#F4F1ED]');
+                        const t1 = n.querySelector('.font-bold');
+                        const t2 = n.querySelector('.text-xs');
+                        if(t1) t1.classList.replace('text-white', 'text-gray-800');
+                        if(t2) t2.classList.replace('text-gray-300', 'text-gray-500');
+                    });
+
+                    node.classList.remove('bg-[#F4F1ED]');
+                    node.classList.add('active-node', 'bg-[#4A6C8C]', 'text-white', 'border-[#4A6C8C]');
+                    const nT1 = node.querySelector('.font-bold');
+                    const nT2 = node.querySelector('.text-xs');
+                    if(nT1) nT1.classList.replace('text-gray-800', 'text-white');
+                    if(nT2) nT2.classList.replace('text-gray-500', 'text-gray-300');
+
+                    const nodeKey = node.getAttribute('data-node');
+                    const data = nodesData[nodeKey];
+
+                    iTitle.innerText = data.title;
+                    iIcon.innerText = data.icon;
+                    iDesc.innerText = data.desc;
+                    
+                    iProps.innerHTML = '';
+                    data.props.forEach(prop => {
+                        const li = document.createElement('li');
+                        li.innerText = prop;
+                        iProps.appendChild(li);
+                    });
+                });
+            });
+        }
+
+        function renderRoadmap() {
+            const listEl = document.getElementById('task-list');
+            listEl.innerHTML = '';
+            
+            let completedCount = 0;
+
+            roadmapTasks.forEach((task, index) => {
+                if (task.isDone) completedCount++;
+
+                const row = document.createElement('div');
+                row.className = `task-row p-4 sm:p-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between ${task.isDone ? 'completed' : 'bg-white hover:bg-gray-50'}`;
+                
+                const leftSection = document.createElement('div');
+                leftSection.className = 'flex items-start gap-4';
+                
+                const checkBtn = document.createElement('button');
+                checkBtn.className = `mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors focus:outline-none ${task.isDone ? 'bg-[#648268] border-[#648268] text-white' : 'border-gray-300 text-transparent hover:border-[#D97757]'}`;
+                checkBtn.innerHTML = '✓';
+                checkBtn.onclick = () => toggleTask(index);
+                
+                const textDiv = document.createElement('div');
+                
+                const titleWrap = document.createElement('div');
+                titleWrap.className = 'flex items-center gap-2';
+                
+                const numSpan = document.createElement('span');
+                numSpan.className = 'text-xs font-bold bg-gray-200 text-gray-600 px-2 py-0.5 rounded';
+                numSpan.innerText = `Mod ${task.id}`;
+                
+                const title = document.createElement('h4');
+                title.className = `task-title font-semibold text-lg ${task.isDone ? 'text-gray-500' : 'text-gray-800'}`;
+                title.innerText = task.title;
+
+                titleWrap.appendChild(numSpan);
+                titleWrap.appendChild(title);
+                
+                const note = document.createElement('p');
+                note.className = 'text-sm text-gray-500 mt-1';
+                note.innerText = task.note;
+
+                textDiv.appendChild(titleWrap);
+                textDiv.appendChild(note);
+                leftSection.appendChild(checkBtn);
+                leftSection.appendChild(textDiv);
+                
+                const rightSection = document.createElement('div');
+                
+                if (task.link !== '#') {
+                    const linkBtn = document.createElement('a');
+                    linkBtn.href = task.link;
+                    linkBtn.target = '_blank';
+                    linkBtn.className = 'inline-flex items-center gap-1 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#D97757] transition-colors';
+                    linkBtn.innerHTML = 'Read Guide ↗';
+                    rightSection.appendChild(linkBtn);
+                } else {
+                    const statusBadge = document.createElement('span');
+                    statusBadge.className = 'inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-bold';
+                    statusBadge.innerHTML = 'Ready';
+                    rightSection.appendChild(statusBadge);
+                }
+
+                row.appendChild(leftSection);
+                row.appendChild(rightSection);
+                listEl.appendChild(row);
+            });
+
+            const pct = Math.round((completedCount / roadmapTasks.length) * 100);
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+            document.getElementById('progress-text').innerText = `${completedCount} of ${roadmapTasks.length} Modules Completed`;
+        }
+
+        function toggleTask(index) {
+            roadmapTasks[index].isDone = !roadmapTasks[index].isDone;
+            renderRoadmap();
+        }
+
+        function renderChart() {
+            if (ramChartInstance) {
+                ramChartInstance.destroy();
+            }
+
+            const ctx = document.getElementById('ramChart').getContext('2d');
+            
+            let dataValues = [];
+            let dataLabels = [];
+            let chartColors = [];
+
+            if (currentProfile === '16gb') {
+                dataLabels = [
+                    'pfSense (1 GB)', 
+                    'Kali Pentest (2 GB - Lean)', 
+                    'Target VM / Win Client (4 GB)', 
+                    'Host OS Win 11 (5.5 GB Reserve)',
+                    'Safety Buffer / SIEM Off (3.5 GB)'
+                ];
+                dataValues = [1, 2, 4, 5.5, 3.5];
+                chartColors = ['#4A6C8C', '#D97757', '#648268', '#94A3B8', '#E2E8F0'];
+                
+                document.getElementById('chart-title').innerText = "Lean RAM Strategy (16GB Host Profile)";
+                document.getElementById('chart-desc').innerText = "Run pfSense, Lean Kali, and one Target VM simultaneously. Do NOT start SIEM and AD together unless you suspend others first.";
+                document.getElementById('ram-assessment-text').innerText = "We must operate with extreme efficiency. Windows 11 host uses ~4.5-5 GB. pfSense is super lightweight (1 GB). We scale Kali down to 2 GB and run target systems dynamically.";
+            } else {
+                dataLabels = [
+                    'pfSense (2 GB)', 
+                    'Kali Pentest (6 GB)', 
+                    'Windows AD VMs (10 GB)', 
+                    'SIEM / Wazuh (8 GB)', 
+                    'Host OS / Reserve (6 GB)'
+                ];
+                dataValues = [2, 6, 10, 8, 6];
+                chartColors = ['#4A6C8C', '#D97757', '#648268', '#F2C94C', '#E2E8F0'];
+
+                document.getElementById('chart-title').innerText = "Standard RAM Strategy (32GB Host Profile)";
+                document.getElementById('chart-desc').innerText = "Ideal for massive multi-node simulations. Allows running active-directory components and heavy SIEM stacks concurrently.";
+                document.getElementById('ram-assessment-text').innerText = "This requires a 32 GB RAM hardware baseline. Safe for multi-VM labs.";
+            }
+
+            ramChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: dataLabels,
+                    datasets: [{
+                        data: dataValues,
+                        backgroundColor: chartColors,
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    family: "'Segoe UI', sans-serif",
+                                    size: 11
+                                },
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' ' + context.label.split(' (')[0] + ': ~' + context.raw + ' GB';
+                                }
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        function initProfileToggles() {
+            const btn16 = document.getElementById('profile-16gb-btn');
+            const btn32 = document.getElementById('profile-32gb-btn');
+
+            btn16.addEventListener('click', () => {
+                currentProfile = '16gb';
+                btn16.className = "px-4 py-2 bg-[#D97757] text-white rounded-lg text-xs font-bold shadow-md transition-colors";
+                btn32.className = "px-4 py-2 bg-slate-700 text-slate-200 rounded-lg text-xs font-bold hover:bg-slate-600 transition-colors";
+                renderChart();
+            });
+
+            btn32.addEventListener('click', () => {
+                currentProfile = '32gb';
+                btn32.className = "px-4 py-2 bg-[#D97757] text-white rounded-lg text-xs font-bold shadow-md transition-colors";
+                btn16.className = "px-4 py-2 bg-slate-700 text-slate-200 rounded-lg text-xs font-bold hover:bg-slate-600 transition-colors";
+                renderChart();
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initNavigation();
+            initArchitectureMap();
+            renderRoadmap();
+            initProfileToggles();
+            renderChart();
+        });
+    </script>
+</body>
+</html>
