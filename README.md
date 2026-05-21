@@ -221,7 +221,7 @@ ethernet3.virtualDev = "vmxnet3"
 
 # References
 
-* Ben Heater VMware Cyber Range Guides
+* Ben Heater aka 0xben VMware Cyber Range Guides
 * Wazuh Documentation
 * Suricata Documentation
 * Sysmon Documentation
@@ -246,4 +246,4 @@ This lab is intended strictly for:
 
 Do not expose these systems directly to the public internet.
 
-Special Credits: The inspiration for this project comes from cybersecurity professional and ethical hacker [Ben Heater](https://benheater.com/). You can check out his blog here.
+Special Credits: The inspiration for this project comes from cybersecurity professional and ethical hacker 0xben [Ben Heater](https://benheater.com/). You can check out his blog here.
